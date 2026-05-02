@@ -12,6 +12,7 @@ from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306
 from luma.core.render import canvas
 from PIL import ImageFont, ImageDraw
+import sys
 
 debounce_length = 0.03
 
@@ -297,8 +298,10 @@ def finish():
     finished = True
 
 def restart_looper():
+    oled_message('RESTARTING...')
     pa.terminate()
-    os.execlp('python3', 'python3', 'main.py')
+    os.execlp(sys.executable, sys.executable, 'main.py')
+    #os.execlp('python3', 'python3', 'main.py')
 
 for i in range(4):
     RECBUTTONS[i].when_held    = loops[i].clear_or_undo
