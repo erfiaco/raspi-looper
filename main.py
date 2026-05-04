@@ -16,14 +16,10 @@ import sys
 
 debounce_length = 0.03
 
-PLAYBUTTONS = (Button(26,  bounce_time=debounce_length),
-               Button(5, bounce_time=debounce_length),
-               Button(9, bounce_time=debounce_length),
-               Button(22, bounce_time=debounce_length))
+PLAYBUTTONS = (Button(26, bounce_time=debounce_length),
+               Button(5,  bounce_time=debounce_length))
 RECBUTTONS  = (Button(6,  bounce_time=debounce_length),
-               Button(13, bounce_time=debounce_length),
-               Button(25,  bounce_time=debounce_length),
-               Button(17, bounce_time=debounce_length))
+               Button(13, bounce_time=debounce_length))
 
 # OLED setup
 serial = i2c(port=1, address=0x3C)
@@ -185,16 +181,14 @@ class audioloop:
         if not already_recording:
             self.is_waiting = True
 
-loops = (audioloop(), audioloop(), audioloop(), audioloop())
+loops = (audioloop(), audioloop())
 prev_rec_buffer = np.zeros([CHUNK], dtype=np.int16)
 
 def update_volume():
     global output_volume
     peak = np.max(np.abs(
         loops[0].main_audio.astype(np.int32) + loops[1].main_audio.astype(np.int32)
-      + loops[2].main_audio.astype(np.int32) + loops[3].main_audio.astype(np.int32)
       + loops[0].dub_audio.astype(np.int32)  + loops[1].dub_audio.astype(np.int32)
-      + loops[2].dub_audio.astype(np.int32)  + loops[3].dub_audio.astype(np.int32)
     ))
     output_volume = SAMPLEMAX / peak if peak > SAMPLEMAX else 1
 
@@ -222,6 +216,8 @@ play_buffer = np.zeros([CHUNK], dtype=np.int16)
 
 def looping_callback(in_data, frame_count, time_info, status):
     global play_buffer, prev_rec_buffer, setup_donerecording, setup_is_recording, LENGTH
+    if status:
+        print(f'[{time.strftime("%H:%M:%S")}] callback status: {status}', flush=True)
     current_rec_buffer = np.right_shift(np.frombuffer(in_data, dtype=np.int16), 2)
     if not setup_donerecording:
         if setup_is_recording:
@@ -249,8 +245,6 @@ def looping_callback(in_data, frame_count, time_info, status):
     play_buffer[:] = np.multiply((
           loops[0].read().astype(np.int32)
         + loops[1].read().astype(np.int32)
-        + loops[2].read().astype(np.int32)
-        + loops[3].read().astype(np.int32)
     ), output_volume, casting='unsafe').astype(np.int16)
     prev_rec_buffer = np.copy(current_rec_buffer)
     return (play_buffer, pyaudio.paContinue)
@@ -303,7 +297,7 @@ def restart_looper():
     os.execlp(sys.executable, sys.executable, 'main.py')
     #os.execlp('python3', 'python3', 'main.py')
 
-for i in range(4):
+for i in range(2):
     RECBUTTONS[i].when_held    = loops[i].clear_or_undo
     RECBUTTONS[i].when_pressed = loops[i].set_recording
     RECBUTTONS[i].when_released = update_volume
@@ -314,7 +308,7 @@ PLAYBUTTONS[0].when_held = restart_looper
 
 while not finished:
     show_status()
-    time.sleep(0.1)
+    time.sleep(0.25)
 
 pa.terminate()
 oled_message('BYE')
