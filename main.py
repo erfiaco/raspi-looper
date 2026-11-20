@@ -54,7 +54,7 @@ print('latency correction (buffers): ' + str(LATENCY))
 print('looking for devices ' + str(INDEVICE) + ' and ' + str(OUTDEVICE))
 
 silence = np.zeros([CHUNK], dtype=np.int16)
-output_volume = np.float16(1.0)
+output_volume = 1.0
 down_ramp = np.linspace(1, 0, CHUNK)
 up_ramp   = np.linspace(0, 1, CHUNK)
 
